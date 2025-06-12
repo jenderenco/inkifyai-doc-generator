@@ -5,14 +5,13 @@ import io.swagger.models.Model;
 import io.swagger.models.Path;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.Schema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 @Service
 public class PromptService {

@@ -91,15 +91,20 @@ openapi:
   retry-delay: 1000              # Delay between retries in milliseconds
 ```
 
-You can add additional LLM providers by implementing the `LlmClient` interface and registering them as Spring beans.
+You can add additional LLM providers by implementing the `LlmClient` interface and registering them
+as Spring beans.
 
 ## How It Works
 
-1. The application fetches the OpenAPI specification from the provided URL (with caching for improved performance)
-2. It parses the specification (supporting both OpenAPI v3 and Swagger v2 formats) to extract relevant information
+1. The application fetches the OpenAPI specification from the provided URL (with caching for
+   improved performance)
+2. It parses the specification (supporting both OpenAPI v3 and Swagger v2 formats) to extract
+   relevant information
 3. It constructs a detailed prompt for the LLM based on the parsed specification
-4. It sends the prompt to the selected LLM provider (default: Ollama) and processes the streaming response
-5. It returns the generated documentation in Markdown format, ready for use in documentation platforms
+4. It sends the prompt to the selected LLM provider (default: Ollama) and processes the streaming
+   response
+5. It returns the generated documentation in Markdown format, ready for use in documentation
+   platforms
 
 ## Contributing
 
@@ -110,6 +115,10 @@ Contributions are welcome! Here's how you can contribute:
 3. Commit your changes: `git commit -am 'Add some feature'`
 4. Push to the branch: `git push origin feature/my-new-feature`
 5. Submit a pull request
+
+### Code Style
+
+This project follows the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html). Please ensure your code adheres to these guidelines when submitting contributions.
 
 ## License
 

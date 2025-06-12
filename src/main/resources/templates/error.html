@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Error - InkifyAI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="container">
+  <h1>Oops! Something went wrong</h1>
+
+  <div class="code-container"
+       style="background-color: rgba(208, 58, 58, 0.05); border-color: var(--danger);">
+    <div style="color: var(--danger); font-weight: 600; margin-bottom: var(--space-md);">
+      <span th:text="${errorTitle}">Error</span>
+    </div>
+    <div th:text="${errorMessage}">An unexpected error occurred.</div>
+  </div>
+
+  <div class="buttons" style="justify-content: center; margin-top: var(--space-xl);">
+    <a href="/" class="button-link">Back to Home</a>
+  </div>
+</div>
+</body>
+</html>
