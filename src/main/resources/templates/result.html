@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Documentation Result</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="container" style="max-width: 900px;">
+  <h1>Generated Documentation</h1>
+  <p>Result is powered by <strong th:text="${aiProvider}">Ollama</strong> AI</p>
+
+  <div class="code-container" role="region" aria-label="Generated documentation markdown">
+    <button class="copy-btn" id="copyBtn" type="button"
+            aria-label="Copy generated documentation to clipboard">
+      <svg class="copy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+           aria-hidden="true" focusable="false">
+        <path
+            d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zM19 5H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/>
+      </svg>
+      Copy
+    </button>
+    <pre id="markdownContent" th:text="${markdown}"></pre>
+  </div>
+
+  <div class="buttons">
+    <a href="/" class="button-link">Back</a>
+    <span id="copyStatus" role="status" aria-live="polite">Copied!</span>
+  </div>
+</div>
+
+<script>
+  const copyBtn = document.getElementById('copyBtn');
+  const markdownContent = document.getElementById('markdownContent');
+  const copyStatus = document.getElementById('copyStatus');
+
+  copyBtn.addEventListener('click', () => {
+    const text = markdownContent.innerText;
+    navigator.clipboard.writeText(text)
+    .then(() => {
+      copyStatus.classList.add('visible');
+      setTimeout(() => copyStatus.classList.remove('visible'), 2000);
+    })
+    .catch(() => {
+      alert('Failed to copy to clipboard.');
+    });
+  });
+</script>
+</body>
+</html>

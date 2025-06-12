@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>InkifyAI – Generate API Docs with AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="container">
+  <h1>InkifyAI – Generate API Docs with AI</h1>
+  <form th:action="@{/generate-docs}" method="post" id="docForm">
+    <div class="form-group">
+      <label for="url">OpenAPI URL</label>
+      <input
+          type="url"
+          id="url"
+          name="url"
+          placeholder="https://api.example.com/openapi.json"
+          required
+          aria-describedby="urlHelp"
+      />
+      <small id="urlHelp">
+        Enter the full URL to your OpenAPI spec (Swagger v2 or v3)
+      </small>
+    </div>
+    <div class="form-group">
+      <label for="aiProvider">AI Provider</label>
+      <select id="aiProvider" name="aiProvider" aria-describedby="aiProviderHelp">
+        <option th:each="provider : ${aiProviders}"
+                th:value="${provider}"
+                th:text="${#strings.capitalize(provider)}"
+                th:selected="${provider == 'ollama'}">Ollama
+        </option>
+      </select>
+      <small id="aiProviderHelp">
+        Select the AI provider to use for generating documentation
+      </small>
+    </div>
+    <button type="submit">Generate Docs</button>
+  </form>
+</div>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div>Unleashing AI magic on your API specs... ✨</div>
+</div>
+
+<script>
+  // Run script as soon as DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('docForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    loadingOverlay.style.display = 'none'; // enforce hidden on load
+
+    form.addEventListener('submit', () => {
+      loadingOverlay.style.display = 'flex';
+      loadingOverlay.classList.add('visible');
+    });
+  });
+</script>
+</body>
+</html>
