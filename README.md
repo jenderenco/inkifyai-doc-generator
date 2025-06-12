@@ -76,8 +76,6 @@ The application can be configured through the `application.yml` file:
 spring:
   application:
     name: "inkifyai-doc-generator"
-  profiles:
-    active: "ollama"
 
 llm:
   ollama:
