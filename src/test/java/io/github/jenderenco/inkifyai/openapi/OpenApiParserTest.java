@@ -18,7 +18,7 @@ class OpenApiParserTest {
   @Autowired private OpenApiParser openApiParser;
 
   @Test
-  void testParseSwaggerV2() throws IOException {
+  void parseSwaggerV2() throws IOException {
     // Load Swagger v2 spec from resource file
     File file = ResourceUtils.getFile("classpath:openapi/swagger-v2-spec.json");
     String swaggerV2Spec = Files.readString(file.toPath());
@@ -34,7 +34,7 @@ class OpenApiParserTest {
   }
 
   @Test
-  void testParseOpenApiV3() throws IOException {
+  void parseOpenApiV3() throws IOException {
     // Load OpenAPI v3 spec from a resource file
     File file = ResourceUtils.getFile("classpath:openapi/openapi-v3-spec.json");
     String openApiV3Spec = Files.readString(file.toPath());
@@ -50,7 +50,7 @@ class OpenApiParserTest {
   }
 
   @Test
-  void testInvalidSpec() throws IOException {
+  void invalidSpec() throws IOException {
     // Load invalid spec from a resource file
     File file = ResourceUtils.getFile("classpath:openapi/invalid-spec.json");
     String invalidSpec = Files.readString(file.toPath());

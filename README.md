@@ -1,13 +1,15 @@
 # InkifyAI - AI-powered OpenAPI Documentation Generator
 
-InkifyAI is a web application that uses AI to automatically generate comprehensive, human-readable
-documentation from OpenAPI specifications (Swagger v2 or v3). It leverages large language models to
-create documentation that is both technically accurate and easy to understand.
+InkifyAI is a web application that uses AI to automatically generate clear, human-friendly documentation from OpenAPI specifications (Swagger v2 and v3). By leveraging large language models, it transforms technical API definitions into well-structured, easy-to-read documentation — making it more accessible for developers and stakeholders alike.
 
 > **Name Origin**: InkifyAI comes from the phrase "Let AI ink your APIs" - reflecting our mission to
 > use artificial intelligence to document your API specifications elegantly and efficiently.
 
-<p align="center"><img src="docs/InkifyAI-Screenshot.png" alt="InkifyAI Screenshot" width="450"></p>
+<p style="text-align: center">
+  <strong>📸 InkifyAI Preview</strong><br>
+  <img src="docs/InkifyAI-Screenshot.png" alt="Screenshot of InkifyAI interface" style="max-width: 100%; width: 600px; height: auto;" />
+  <br><em>Generate beautiful API documentation with ease</em>
+</p>
 
 ## Features
 
@@ -33,7 +35,7 @@ create documentation that is both technically accurate and easy to understand.
 1. Clone the repository:
    ```bash
    git clone https://github.com/jenderenco/inkifyai-doc-generator.git
-   cd doc-generator
+   cd inkifyai-doc-generator
    ```
 
 2. Build the application:

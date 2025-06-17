@@ -7,7 +7,7 @@
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
     <version>3.5.0</version>
-    <relativePath/> <!-- lookup parent from repository -->
+    <relativePath/>
   </parent>
   <groupId>io.github.jenderenco.inkifyai</groupId>
   <artifactId>InkifyAI</artifactId>
@@ -46,20 +46,12 @@
       <artifactId>spring-boot-starter-thymeleaf</artifactId>
     </dependency>
 
-    <!-- Lombok (for cleaner code) -->
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <optional>true</optional>
-    </dependency>
-
     <!-- OpenAPI / Swagger parser -->
     <dependency>
       <groupId>io.swagger.parser.v3</groupId>
       <artifactId>swagger-parser</artifactId>
       <version>${swagger.parser.version}</version>
     </dependency>
-
 
     <!-- Test support -->
     <dependency>

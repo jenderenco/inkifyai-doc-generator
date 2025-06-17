@@ -22,16 +22,14 @@ public class OpenApiFetcher {
   private static final Logger LOG = LoggerFactory.getLogger(OpenApiFetcher.class);
 
   private final WebClient webClient;
-  private final OpenApiProperties properties;
 
-  public OpenApiFetcher(WebClient.Builder webClientBuilder, OpenApiProperties properties) {
+  public OpenApiFetcher(WebClient.Builder webClientBuilder) {
     this.webClient =
         webClientBuilder
             .codecs(
                 configurer ->
                     configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024)) // 16MB max size
             .build();
-    this.properties = properties;
   }
 
   /**
@@ -41,12 +39,14 @@ public class OpenApiFetcher {
    * @return the OpenAPI specification as a string
    * @throws OpenApiFetchException if the URL is invalid or the fetch fails
    */
-  @Cacheable(value = "openApiSpecs", key = "#url", condition = "#properties.cacheSize > 0")
-  public String fetch(String url) {
+  @Cacheable(value = "openApiSpecs", key = "#url", condition = "#properties.cacheSize() > 0")
+  public String fetch(String url, OpenApiProperties properties) {
     LOG.info("Fetching OpenAPI specification from: {}", url);
 
     try {
-      validateUrl(url);
+      if (properties.validateUrl()) {
+        validateUrl(url);
+      }
 
       return webClient
           .get()
@@ -89,10 +89,6 @@ public class OpenApiFetcher {
   }
 
   private void validateUrl(String url) {
-    if (!properties.validateUrl()) {
-      return;
-    }
-
     URI uri = toUri(url).orElseThrow(() -> new OpenApiFetchException("Invalid URL: " + url));
     if (!uri.isAbsolute()) {
       throw new OpenApiFetchException("URL must be absolute: " + url);

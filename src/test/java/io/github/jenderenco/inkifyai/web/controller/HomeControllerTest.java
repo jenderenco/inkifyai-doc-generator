@@ -27,7 +27,7 @@ class HomeControllerTest {
   @InjectMocks private HomeController homeController;
 
   @Test
-  void testHomeEndpoint() {
+  void homeEndpoint() {
     // Arrange
     List<String> supportedClients = List.of("ollama", "openai");
     when(llmClientRegistry.getSupportedClients()).thenReturn(supportedClients);
@@ -41,7 +41,7 @@ class HomeControllerTest {
   }
 
   @Test
-  void testGenerateDocsEndpoint() {
+  void generateDocsEndpoint() {
     // Arrange
     String url = "https://example.com/api-docs";
     String aiProvider = "ollama";
@@ -59,7 +59,7 @@ class HomeControllerTest {
   }
 
   @Test
-  void testGenerateDocsWithDefaultAiProvider() {
+  void generateDocsWithDefaultAiProvider() {
     // Arrange
     String url = "https://example.com/api-docs";
     String defaultAiProvider = "ollama";
@@ -78,7 +78,7 @@ class HomeControllerTest {
   }
 
   @Test
-  void testGenerateDocsWithOpenApiFetchException() {
+  void generateDocsWithOpenApiFetchException() {
     // Arrange
     String url = "https://example.com/invalid-url";
     String aiProvider = "ollama";
@@ -99,7 +99,7 @@ class HomeControllerTest {
   }
 
   @Test
-  void testGenerateDocsWithIllegalArgumentException() {
+  void generateDocsWithIllegalArgumentException() {
     // Arrange
     String url = "https://example.com/api-docs";
     String aiProvider = "invalid-provider";
@@ -119,7 +119,7 @@ class HomeControllerTest {
   }
 
   @Test
-  void testGenerateDocsWithUnexpectedException() {
+  void generateDocsWithUnexpectedException() {
     // Arrange
     String url = "https://example.com/api-docs";
     String aiProvider = "ollama";

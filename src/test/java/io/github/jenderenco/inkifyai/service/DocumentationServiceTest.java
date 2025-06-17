@@ -9,6 +9,7 @@ import io.github.jenderenco.inkifyai.llm.client.LlmClientRegistry;
 import io.github.jenderenco.inkifyai.llm.prompt.PromptService;
 import io.github.jenderenco.inkifyai.openapi.OpenApiFetcher;
 import io.github.jenderenco.inkifyai.openapi.OpenApiParser;
+import io.github.jenderenco.inkifyai.openapi.config.OpenApiProperties;
 import io.github.jenderenco.inkifyai.openapi.exception.OpenApiFetchException;
 import io.github.jenderenco.inkifyai.openapi.model.ParsedOpenApiSpec;
 import java.util.Optional;
@@ -27,6 +28,7 @@ class DocumentationServiceTest {
   @Mock private LlmClientRegistry llmClientRegistry;
   @Mock private LlmClient llmClient;
   @Mock private ParsedOpenApiSpec parsedOpenApiSpec;
+  @Mock private OpenApiProperties openApiProperties;
 
   @InjectMocks private DocumentationService documentationService;
 
@@ -39,7 +41,7 @@ class DocumentationServiceTest {
     String prompt = "Generate documentation for this API";
     String generatedDoc = "# API Documentation\n\nThis is the documentation.";
 
-    when(fetcher.fetch(url)).thenReturn(rawSpec);
+    when(fetcher.fetch(url, openApiProperties)).thenReturn(rawSpec);
     when(openApiParser.parse(rawSpec)).thenReturn(parsedOpenApiSpec);
     when(promptService.buildPrompt(parsedOpenApiSpec)).thenReturn(prompt);
     when(llmClientRegistry.getClient(aiProvider)).thenReturn(llmClient);
@@ -53,12 +55,12 @@ class DocumentationServiceTest {
   }
 
   @Test
-  void testGenerateFromUrlWithFetchException() {
+  void generateFromUrlWithFetchException() {
     // Arrange
     String url = "https://example.com/invalid-api-docs";
     String aiProvider = "ollama";
 
-    when(fetcher.fetch(url))
+    when(fetcher.fetch(url, openApiProperties))
         .thenThrow(new OpenApiFetchException("Failed to fetch OpenAPI specification"));
 
     // Act & Assert
@@ -68,13 +70,13 @@ class DocumentationServiceTest {
   }
 
   @Test
-  void testGenerateFromUrlWithInvalidSpec() {
+  void generateFromUrlWithInvalidSpec() {
     // Arrange
     String url = "https://example.com/api-docs";
     String aiProvider = "ollama";
     String rawSpec = "{ \"invalid\": \"spec\" }";
 
-    when(fetcher.fetch(url)).thenReturn(rawSpec);
+    when(fetcher.fetch(url, openApiProperties)).thenReturn(rawSpec);
     when(openApiParser.parse(rawSpec))
         .thenThrow(new IllegalArgumentException("Invalid OpenAPI specification"));
 
@@ -85,13 +87,13 @@ class DocumentationServiceTest {
   }
 
   @Test
-  void testGenerateFromUrlWithUnsupportedAiProvider() {
+  void generateFromUrlWithUnsupportedAiProvider() {
     // Arrange
     String url = "https://example.com/api-docs";
     String aiProvider = "unsupported";
     String rawSpec = "{ \"openapi\": \"3.0.0\" }";
 
-    when(fetcher.fetch(url)).thenReturn(rawSpec);
+    when(fetcher.fetch(url, openApiProperties)).thenReturn(rawSpec);
     when(openApiParser.parse(rawSpec)).thenReturn(parsedOpenApiSpec);
     when(llmClientRegistry.getClient(aiProvider))
         .thenThrow(new IllegalArgumentException("Unsupported AI provider"));
@@ -103,14 +105,14 @@ class DocumentationServiceTest {
   }
 
   @Test
-  void testGenerateFromUrlWithLlmFailure() {
+  void generateFromUrlWithLlmFailure() {
     // Arrange
     String url = "https://example.com/api-docs";
     String aiProvider = "ollama";
     String rawSpec = "{ \"openapi\": \"3.0.0\" }";
     String prompt = "Generate documentation for this API";
 
-    when(fetcher.fetch(url)).thenReturn(rawSpec);
+    when(fetcher.fetch(url, openApiProperties)).thenReturn(rawSpec);
     when(openApiParser.parse(rawSpec)).thenReturn(parsedOpenApiSpec);
     when(promptService.buildPrompt(parsedOpenApiSpec)).thenReturn(prompt);
     when(llmClientRegistry.getClient(aiProvider)).thenReturn(llmClient);

@@ -5,6 +5,7 @@ import io.github.jenderenco.inkifyai.llm.client.LlmClientRegistry;
 import io.github.jenderenco.inkifyai.llm.prompt.PromptService;
 import io.github.jenderenco.inkifyai.openapi.OpenApiFetcher;
 import io.github.jenderenco.inkifyai.openapi.OpenApiParser;
+import io.github.jenderenco.inkifyai.openapi.config.OpenApiProperties;
 import io.github.jenderenco.inkifyai.openapi.exception.OpenApiFetchException;
 import io.github.jenderenco.inkifyai.openapi.model.ParsedOpenApiSpec;
 import org.springframework.stereotype.Service;
@@ -17,16 +18,19 @@ public class DocumentationService {
   private final OpenApiParser openApiParser;
   private final PromptService promptService;
   private final LlmClientRegistry llmClientRegistry;
+  private final OpenApiProperties openApiProperties;
 
   public DocumentationService(
       OpenApiFetcher fetcher,
       OpenApiParser openApiParser,
       PromptService promptService,
-      LlmClientRegistry llmClientRegistry) {
+      LlmClientRegistry llmClientRegistry,
+      OpenApiProperties openApiProperties) {
     this.fetcher = fetcher;
     this.openApiParser = openApiParser;
     this.promptService = promptService;
     this.llmClientRegistry = llmClientRegistry;
+    this.openApiProperties = openApiProperties;
   }
 
   /**
@@ -40,7 +44,7 @@ public class DocumentationService {
    *     not supported, or the LLM fails to generate documentation
    */
   public String generateFromUrl(String openApiUrl, String aiProvider) {
-    String rawSpec = fetcher.fetch(openApiUrl);
+    String rawSpec = fetcher.fetch(openApiUrl, openApiProperties);
     ParsedOpenApiSpec parsed = openApiParser.parse(rawSpec);
     String prompt = promptService.buildPrompt(parsed);
 
