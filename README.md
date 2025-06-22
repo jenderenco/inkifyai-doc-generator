@@ -1,6 +1,9 @@
 # InkifyAI - AI-powered OpenAPI Documentation Generator
 
-InkifyAI is a web application that uses AI to automatically generate clear, human-friendly documentation from OpenAPI specifications (Swagger v2 and v3). By leveraging large language models, it transforms technical API definitions into well-structured, easy-to-read documentation — making it more accessible for developers and stakeholders alike.
+InkifyAI is a web application that uses AI to automatically generate clear, human-friendly
+documentation from OpenAPI specifications (Swagger v2 and v3). By leveraging large language models,
+it transforms technical API definitions into well-structured, easy-to-read documentation — making it
+more accessible for developers and stakeholders alike.
 
 > **Name Origin**: InkifyAI comes from the phrase "Let AI ink your APIs" - reflecting our mission to
 > use artificial intelligence to document your API specifications elegantly and efficiently.
@@ -15,8 +18,8 @@ InkifyAI is a web application that uses AI to automatically generate clear, huma
 
 - **Simple Web Interface**: Upload your OpenAPI specification URL and get documentation in seconds
 - **AI-Powered Documentation**: Uses LLMs to generate high-quality, human-readable documentation
-- **Markdown Output**: Documentation is generated in Markdown format, ready for use in GitBook or
-  other documentation platforms
+- **GitBook-Ready Markdown**: Documentation is generated in Markdown format optimized for GitBook
+- **Spring AI Integration**: Leverages Spring AI for seamless LLM integration
 - **Multiple LLM Support**: Designed to work with various LLM providers, currently supporting Ollama
 - **OpenAPI Compatibility**: Supports both OpenAPI v3 and Swagger v2 specifications
 - **Caching**: Caches OpenAPI specifications for improved performance
@@ -78,23 +81,51 @@ The application can be configured through the `application.yml` file:
 spring:
   application:
     name: "inkifyai-doc-generator"
-
-llm:
-  ollama:
-    url: http://localhost:11434  # URL of your Ollama instance
-    model: llama3.2              # LLM model to use
-    temperature: 0.7             # Temperature setting for generation
+  ai:
+    ollama:
+      base-url: http://localhost:11434  # URL of your Ollama instance
+      chat:
+        options:
+          model: llama3.2              # LLM model to use
+          temperature: 0.7             # Temperature setting for generation
+          top-k: 50                    # Top-k sampling parameter
+          top-p: 0.9                   # Top-p sampling parameter
+          num-predict: 2000            # Maximum number of tokens to generate
 
 openapi:
-  cache-size: 100                # Number of OpenAPI specs to cache (0 to disable)
-  validate-url: true             # Whether to validate URLs before fetching
-  read-timeout: 10000            # Read timeout in milliseconds
-  max-retries: 3                 # Maximum number of retry attempts
-  retry-delay: 1000              # Delay between retries in milliseconds
+  fetcher:
+    connect-timeout: 5000              # Connect timeout in milliseconds
+    read-timeout: 10000                # Read timeout in milliseconds
+    max-retries: 3                     # Maximum number of retry attempts
+    retry-delay: 1000                  # Delay between retries in milliseconds
+    validate-url: true                 # Whether to validate URLs before fetching
+    cache-size: 100                    # Number of OpenAPI specs to cache (0 to disable)
+    cache-ttl: 3600000                 # Cache TTL in milliseconds (1 hour)
+
+api:
+  generate-docs:
+    timeout: 1m                        # Timeout for document generation API endpoint
 ```
 
 You can add additional LLM providers by implementing the `LlmClient` interface and registering them
-as Spring beans.
+as Spring beans. The application leverages Spring AI for LLM integration, making it easy to add
+support for
+additional LLM providers supported by Spring AI.
+
+### Request Timeout
+
+The application has a timeout configuration for the document generation API endpoint:
+
+**API Endpoint Timeout**: Configured in `application.yml` with a default of 2 minute:
+
+```yaml
+api:
+  generate-docs:
+    timeout: 2m
+```
+
+This timeout configuration prevents requests from hanging indefinitely and ensures that LLM
+responses are processed within a reasonable time frame.
 
 ## How It Works
 
@@ -102,10 +133,13 @@ as Spring beans.
    improved performance)
 2. It parses the specification (supporting both OpenAPI v3 and Swagger v2 formats) to extract
    relevant information
-3. It constructs a detailed prompt for the LLM based on the parsed specification
-4. It sends the prompt to the selected LLM provider (default: Ollama) and processes the streaming
+3. It constructs a detailed prompt using a GitBook-optimized template based on the parsed
+   specification
+4. It sends the prompt to the selected LLM provider (using Spring AI integration) and processes the
+   streaming
    response
-5. It returns the generated documentation in Markdown format, ready for use in documentation
+5. It returns the generated documentation in GitBook-ready Markdown format, ready for use in
+   documentation
    platforms
 
 ## Contributing
@@ -120,7 +154,9 @@ Contributions are welcome! Here's how you can contribute:
 
 ### Code Style
 
-This project follows the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html). Please ensure your code adheres to these guidelines when submitting contributions.
+This project follows
+the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html). Please ensure
+your code adheres to these guidelines when submitting contributions.
 
 ## License
 
@@ -129,5 +165,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgements
 
 - [Spring Boot](https://spring.io/projects/spring-boot) for the web framework
+- [Spring AI](https://spring.io/projects/spring-ai) for LLM integration
 - [Ollama](https://ollama.ai/) for local LLM inference
 - [Swagger Parser](https://github.com/swagger-api/swagger-parser) for OpenAPI specification parsing

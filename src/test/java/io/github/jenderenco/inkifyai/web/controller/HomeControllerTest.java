@@ -1,140 +1,183 @@
 package io.github.jenderenco.inkifyai.web.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import io.github.jenderenco.inkifyai.llm.client.LlmClientRegistry;
 import io.github.jenderenco.inkifyai.openapi.exception.OpenApiFetchException;
 import io.github.jenderenco.inkifyai.service.DocumentationService;
+import io.github.jenderenco.inkifyai.web.controller.config.ApiProperties;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ui.Model;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import reactor.core.publisher.Flux;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(HomeController.class)
 class HomeControllerTest {
 
-  @Mock private DocumentationService documentationService;
-  @Mock private LlmClientRegistry llmClientRegistry;
-  @Mock private Model model;
+  @Autowired private MockMvc mockMvc;
 
-  @InjectMocks private HomeController homeController;
+  @MockitoBean private DocumentationService documentationService;
+
+  @MockitoBean private LlmClientRegistry llmClientRegistry;
+
+  @MockitoBean private ApiProperties apiProperties;
 
   @Test
-  void homeEndpoint() {
+  void homeEndpoint() throws Exception {
     // Arrange
     List<String> supportedClients = List.of("ollama", "openai");
     when(llmClientRegistry.getSupportedClients()).thenReturn(supportedClients);
-    when(model.addAttribute("aiProviders", supportedClients)).thenReturn(model);
 
-    // Act
-    String viewName = homeController.home(model);
-
-    // Assert
-    assertThat(viewName).isEqualTo("home");
+    // Act & Assert
+    mockMvc
+        .perform(get("/"))
+        .andExpect(status().isOk())
+        .andExpect(view().name("home"))
+        .andExpect(model().attribute("aiProviders", supportedClients));
   }
 
   @Test
-  void generateDocsEndpoint() {
+  void generateDocsEndpoint() throws Exception {
     // Arrange
     String url = "https://example.com/api-docs";
     String aiProvider = "ollama";
-    String generatedMarkdown = "# Generated Documentation\n\nThis is a test.";
+    String markdown = "# Generated Documentation\n\nThis is a test.";
 
-    when(documentationService.generateFromUrl(url, aiProvider)).thenReturn(generatedMarkdown);
-    when(model.addAttribute("markdown", generatedMarkdown)).thenReturn(model);
-    when(model.addAttribute("aiProvider", aiProvider)).thenReturn(model);
+    ApiProperties.GenerateDocs generateDocs = new ApiProperties.GenerateDocs(Duration.ofSeconds(1));
+    when(apiProperties.generateDocs()).thenReturn(generateDocs);
+    when(documentationService.generateFromUrl(url, aiProvider)).thenReturn(Flux.just(markdown));
 
-    // Act
-    String viewName = homeController.generateDocs(url, aiProvider, model);
+    MvcResult mvcResult =
+        mockMvc
+            .perform(post("/generate-docs").param("url", url).param("aiProvider", aiProvider))
+            .andExpect(status().isOk())
+            .andExpect(request().asyncStarted())
+            .andReturn();
 
-    // Assert
-    assertThat(viewName).isEqualTo("result");
+    // Act & Assert
+    mockMvc
+        .perform(asyncDispatch(mvcResult))
+        .andExpect(status().isOk())
+        .andExpect(view().name("result"))
+        .andExpect(model().attribute("markdown", markdown))
+        .andExpect(model().attribute("aiProvider", aiProvider));
   }
 
   @Test
-  void generateDocsWithDefaultAiProvider() {
+  void generateDocsWithDefaultAiProvider() throws Exception {
     // Arrange
     String url = "https://example.com/api-docs";
-    String defaultAiProvider = "ollama";
-    String generatedMarkdown = "# Generated Documentation\n\nThis is a test.";
+    String markdown = "# Default Provider Response";
 
-    when(documentationService.generateFromUrl(url, defaultAiProvider))
-        .thenReturn(generatedMarkdown);
-    when(model.addAttribute("markdown", generatedMarkdown)).thenReturn(model);
-    when(model.addAttribute("aiProvider", defaultAiProvider)).thenReturn(model);
+    ApiProperties.GenerateDocs generateDocs = new ApiProperties.GenerateDocs(Duration.ofSeconds(1));
+    when(apiProperties.generateDocs()).thenReturn(generateDocs);
+    when(documentationService.generateFromUrl(url, "ollama")).thenReturn(Flux.just(markdown));
 
-    // Act
-    String viewName = homeController.generateDocs(url, defaultAiProvider, model);
+    MvcResult mvcResult =
+        mockMvc
+            .perform(post("/generate-docs").param("url", url)) // no aiProvider param, uses default
+            .andExpect(status().isOk())
+            .andExpect(request().asyncStarted())
+            .andReturn();
 
-    // Assert
-    assertThat(viewName).isEqualTo("result");
+    // Act & Assert
+    mockMvc
+        .perform(asyncDispatch(mvcResult))
+        .andExpect(status().isOk())
+        .andExpect(view().name("result"))
+        .andExpect(model().attribute("markdown", markdown))
+        .andExpect(model().attribute("aiProvider", "ollama"));
   }
 
   @Test
-  void generateDocsWithOpenApiFetchException() {
+  void generateDocsWithOpenApiFetchException() throws Exception {
     // Arrange
-    String url = "https://example.com/invalid-url";
-    String aiProvider = "ollama";
-    OpenApiFetchException exception =
-        new OpenApiFetchException("Failed to fetch OpenAPI spec", new RuntimeException());
+    String url = "https://example.com/invalid";
+    OpenApiFetchException ex = new OpenApiFetchException("Failed to fetch spec");
 
-    when(documentationService.generateFromUrl(url, aiProvider)).thenThrow(exception);
-    when(model.addAttribute(eq("errorTitle"), anyString())).thenReturn(model);
-    when(model.addAttribute(eq("errorMessage"), anyString())).thenReturn(model);
+    ApiProperties.GenerateDocs generateDocs = new ApiProperties.GenerateDocs(Duration.ofSeconds(1));
+    when(apiProperties.generateDocs()).thenReturn(generateDocs);
+    when(documentationService.generateFromUrl(eq(url), any())).thenReturn(Flux.error(ex));
 
-    // Act
-    String viewName = homeController.generateDocs(url, aiProvider, model);
+    MvcResult mvcResult =
+        mockMvc
+            .perform(post("/generate-docs").param("url", url))
+            .andExpect(status().isOk())
+            .andExpect(request().asyncStarted())
+            .andReturn();
 
-    // Assert
-    assertThat(viewName).isEqualTo("error");
-    verify(model).addAttribute(eq("errorTitle"), eq("Failed to fetch API specification"));
-    verify(model).addAttribute(eq("errorMessage"), anyString());
+    // Act & Assert
+    mockMvc
+        .perform(asyncDispatch(mvcResult))
+        .andExpect(status().isOk())
+        .andExpect(view().name("error"))
+        .andExpect(model().attribute("errorTitle", "Failed to fetch API specification"))
+        .andExpect(model().attributeExists("errorMessage"));
   }
 
   @Test
-  void generateDocsWithIllegalArgumentException() {
-    // Arrange
-    String url = "https://example.com/api-docs";
-    String aiProvider = "invalid-provider";
-    IllegalArgumentException exception = new IllegalArgumentException("Unsupported AI provider");
-
-    when(documentationService.generateFromUrl(url, aiProvider)).thenThrow(exception);
-    when(model.addAttribute(eq("errorTitle"), anyString())).thenReturn(model);
-    when(model.addAttribute(eq("errorMessage"), anyString())).thenReturn(model);
-
-    // Act
-    String viewName = homeController.generateDocs(url, aiProvider, model);
-
-    // Assert
-    assertThat(viewName).isEqualTo("error");
-    verify(model).addAttribute(eq("errorTitle"), eq("Failed to generate documentation"));
-    verify(model).addAttribute(eq("errorMessage"), anyString());
-  }
-
-  @Test
-  void generateDocsWithUnexpectedException() {
+  void generateDocsWithIllegalArgumentException() throws Exception {
     // Arrange
     String url = "https://example.com/api-docs";
-    String aiProvider = "ollama";
-    RuntimeException exception = new RuntimeException("Unexpected error");
+    IllegalArgumentException ex = new IllegalArgumentException("Invalid provider");
 
-    when(documentationService.generateFromUrl(url, aiProvider)).thenThrow(exception);
-    when(model.addAttribute(eq("errorTitle"), anyString())).thenReturn(model);
-    when(model.addAttribute(eq("errorMessage"), anyString())).thenReturn(model);
+    ApiProperties.GenerateDocs generateDocs = new ApiProperties.GenerateDocs(Duration.ofSeconds(1));
+    when(apiProperties.generateDocs()).thenReturn(generateDocs);
+    when(documentationService.generateFromUrl(eq(url), any())).thenReturn(Flux.error(ex));
 
-    // Act
-    String viewName = homeController.generateDocs(url, aiProvider, model);
+    MvcResult mvcResult =
+        mockMvc
+            .perform(post("/generate-docs").param("url", url).param("aiProvider", "invalid"))
+            .andExpect(status().isOk())
+            .andExpect(request().asyncStarted())
+            .andReturn();
 
-    // Assert
-    assertThat(viewName).isEqualTo("error");
-    verify(model).addAttribute(eq("errorTitle"), eq("Unexpected error"));
-    verify(model).addAttribute(eq("errorMessage"), anyString());
+    // Act & Assert
+    mockMvc
+        .perform(asyncDispatch(mvcResult))
+        .andExpect(status().isOk())
+        .andExpect(view().name("error"))
+        .andExpect(model().attribute("errorTitle", "Failed to generate documentation"))
+        .andExpect(model().attributeExists("errorMessage"));
+  }
+
+  @Test
+  void generateDocsWithUnexpectedException() throws Exception {
+    // Arrange
+    String url = "https://example.com/api-docs";
+
+    ApiProperties.GenerateDocs generateDocs = new ApiProperties.GenerateDocs(Duration.ofSeconds(1));
+    when(apiProperties.generateDocs()).thenReturn(generateDocs);
+    when(documentationService.generateFromUrl(eq(url), any()))
+        .thenReturn(Flux.error(new RuntimeException("Unexpected")));
+
+    MvcResult mvcResult =
+        mockMvc
+            .perform(post("/generate-docs").param("url", url).param("aiProvider", "ollama"))
+            .andExpect(status().isOk())
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+    // Act & Assert
+    mockMvc
+        .perform(asyncDispatch(mvcResult))
+        .andExpect(status().isOk())
+        .andExpect(view().name("error"))
+        .andExpect(model().attribute("errorTitle", "Unexpected error"))
+        .andExpect(model().attributeExists("errorMessage"));
   }
 }

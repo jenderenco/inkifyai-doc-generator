@@ -1,77 +1,61 @@
 package io.github.jenderenco.inkifyai.llm.client.ollama;
 
 import io.github.jenderenco.inkifyai.llm.client.LlmClient;
-import io.github.jenderenco.inkifyai.llm.client.ollama.config.OllamaProperties;
-import io.github.jenderenco.inkifyai.llm.client.ollama.exception.InternalLlmException;
-import io.github.jenderenco.inkifyai.llm.client.ollama.model.OllamaChunk;
-import io.github.jenderenco.inkifyai.llm.client.ollama.model.OllamaRequest;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import org.apache.http.HttpHeaders;
+import io.github.jenderenco.inkifyai.llm.exception.InternalLlmException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
+/**
+ * Implementation of the LlmClient interface for the Ollama LLM provider. Uses Spring AI's
+ * OllamaChatModel to interact with Ollama.
+ */
 @Service("ollamaClient")
 public class OllamaLlmClient implements LlmClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(OllamaLlmClient.class);
 
-  private final WebClient webClient;
-  private final OllamaProperties ollamaProperties;
+  private final ChatClient chatClient;
 
-  public OllamaLlmClient(WebClient.Builder webClientBuilder, OllamaProperties ollamaProperties) {
-    this.webClient =
-        webClientBuilder
-            .baseUrl(ollamaProperties.url())
-            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .build();
-    this.ollamaProperties = ollamaProperties;
+  /**
+   * Constructs a new OllamaLlmClient with the given chat model.
+   *
+   * @param chatModel the Ollama chat model to use
+   */
+  public OllamaLlmClient(OllamaChatModel chatModel) {
+    this.chatClient = ChatClient.builder(chatModel).build();
   }
 
+  /**
+   * Sends a prompt to the Ollama LLM and returns a stream of response chunks.
+   *
+   * @param prompt the prompt to send to the LLM
+   * @return a Flux of response chunks from the LLM
+   * @throws InternalLlmException if there's an error initiating the LLM stream
+   */
   @Override
-  public Optional<String> complete(String prompt) {
-    var request =
-        new OllamaRequest(ollamaProperties.model(), prompt, true, ollamaProperties.temperature());
-    String result =
-        webClient
-            .post()
-            .uri("/api/generate")
-            .bodyValue(request)
-            .accept(MediaType.APPLICATION_NDJSON)
-            .retrieve()
-            .onStatus(HttpStatusCode::isError, this::handleError)
-            .bodyToFlux(OllamaChunk.class) // see below
-            .takeUntil(OllamaChunk::done)
-            .map(
-                chunk -> {
-                  LOG.debug("Received chunk: {}", chunk.response());
-                  return chunk.response();
-                })
-            .collect(Collectors.joining())
-            .block();
-
-    return Optional.ofNullable(result);
+  public Flux<String> complete(String prompt) {
+    try {
+      return chatClient.prompt().user(prompt).stream()
+          .content()
+          .doOnNext(chunk -> LOG.debug("Ollama LLM response chunk: {}", chunk))
+          .doOnError(e -> LOG.error("Error streaming Ollama LLM response", e));
+    } catch (Exception ex) {
+      LOG.error("Error initiating Ollama LLM stream", ex);
+      return Flux.error(new InternalLlmException("Ollama LLM stream failed", ex));
+    }
   }
 
+  /**
+   * Returns the name of the LLM provider.
+   *
+   * @return the provider name "ollama"
+   */
   @Override
   public String providerName() {
     return "ollama";
-  }
-
-  private Mono<Throwable> handleError(ClientResponse response) {
-    return response
-        .bodyToMono(String.class)
-        .flatMap(
-            body -> {
-              HttpStatusCode status = response.statusCode();
-              LOG.error("Ollama responded with {}: {}", status, body);
-              return Mono.error(new InternalLlmException("LLM call failed [" + status + "]", body));
-            });
   }
 }

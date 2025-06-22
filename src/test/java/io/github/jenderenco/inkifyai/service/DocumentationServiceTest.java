@@ -1,7 +1,6 @@
 package io.github.jenderenco.inkifyai.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import io.github.jenderenco.inkifyai.llm.client.LlmClient;
@@ -12,12 +11,13 @@ import io.github.jenderenco.inkifyai.openapi.OpenApiParser;
 import io.github.jenderenco.inkifyai.openapi.config.OpenApiProperties;
 import io.github.jenderenco.inkifyai.openapi.exception.OpenApiFetchException;
 import io.github.jenderenco.inkifyai.openapi.model.ParsedOpenApiSpec;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
 class DocumentationServiceTest {
@@ -33,7 +33,7 @@ class DocumentationServiceTest {
   @InjectMocks private DocumentationService documentationService;
 
   @Test
-  void testGenerateFromUrlSuccess() {
+  void generateFromUrlSuccess() {
     // Arrange
     String url = "https://example.com/api-docs";
     String aiProvider = "ollama";
@@ -45,13 +45,12 @@ class DocumentationServiceTest {
     when(openApiParser.parse(rawSpec)).thenReturn(parsedOpenApiSpec);
     when(promptService.buildPrompt(parsedOpenApiSpec)).thenReturn(prompt);
     when(llmClientRegistry.getClient(aiProvider)).thenReturn(llmClient);
-    when(llmClient.complete(prompt)).thenReturn(Optional.of(generatedDoc));
+    when(llmClient.complete(prompt)).thenReturn(Flux.just(generatedDoc));
 
-    // Act
-    String result = documentationService.generateFromUrl(url, aiProvider);
-
-    // Assert
-    assertThat(result).isEqualTo(generatedDoc);
+    // Act & Assert
+    StepVerifier.create(documentationService.generateFromUrl(url, aiProvider))
+        .expectNext(generatedDoc)
+        .verifyComplete();
   }
 
   @Test
@@ -64,9 +63,13 @@ class DocumentationServiceTest {
         .thenThrow(new OpenApiFetchException("Failed to fetch OpenAPI specification"));
 
     // Act & Assert
-    assertThatThrownBy(() -> documentationService.generateFromUrl(url, aiProvider))
-        .isInstanceOf(OpenApiFetchException.class)
-        .hasMessageContaining("Failed to fetch OpenAPI specification");
+    StepVerifier.create(documentationService.generateFromUrl(url, aiProvider))
+        .expectErrorSatisfies(
+            error -> {
+              assertThat(error).isInstanceOf(OpenApiFetchException.class);
+              assertThat(error).hasMessageContaining("Failed to fetch OpenAPI specification");
+            })
+        .verify();
   }
 
   @Test
@@ -81,9 +84,13 @@ class DocumentationServiceTest {
         .thenThrow(new IllegalArgumentException("Invalid OpenAPI specification"));
 
     // Act & Assert
-    assertThatThrownBy(() -> documentationService.generateFromUrl(url, aiProvider))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Invalid OpenAPI specification");
+    StepVerifier.create(documentationService.generateFromUrl(url, aiProvider))
+        .expectErrorSatisfies(
+            error -> {
+              assertThat(error).isInstanceOf(IllegalArgumentException.class);
+              assertThat(error).hasMessageContaining("Invalid OpenAPI specification");
+            })
+        .verify();
   }
 
   @Test
@@ -99,9 +106,13 @@ class DocumentationServiceTest {
         .thenThrow(new IllegalArgumentException("Unsupported AI provider"));
 
     // Act & Assert
-    assertThatThrownBy(() -> documentationService.generateFromUrl(url, aiProvider))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Unsupported AI provider");
+    StepVerifier.create(documentationService.generateFromUrl(url, aiProvider))
+        .expectErrorSatisfies(
+            error -> {
+              assertThat(error).isInstanceOf(IllegalArgumentException.class);
+              assertThat(error).hasMessageContaining("Unsupported AI provider");
+            })
+        .verify();
   }
 
   @Test
@@ -116,11 +127,15 @@ class DocumentationServiceTest {
     when(openApiParser.parse(rawSpec)).thenReturn(parsedOpenApiSpec);
     when(promptService.buildPrompt(parsedOpenApiSpec)).thenReturn(prompt);
     when(llmClientRegistry.getClient(aiProvider)).thenReturn(llmClient);
-    when(llmClient.complete(prompt)).thenReturn(Optional.empty());
+    when(llmClient.complete(prompt)).thenReturn(Flux.empty());
 
     // Act & Assert
-    assertThatThrownBy(() -> documentationService.generateFromUrl(url, aiProvider))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Failed to generate documentation");
+    StepVerifier.create(documentationService.generateFromUrl(url, aiProvider))
+        .expectErrorSatisfies(
+            error -> {
+              assertThat(error).isInstanceOf(IllegalArgumentException.class);
+              assertThat(error).hasMessageContaining("Failed to generate documentation");
+            })
+        .verify();
   }
 }
