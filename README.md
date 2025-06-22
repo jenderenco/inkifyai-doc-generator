@@ -116,7 +116,7 @@ additional LLM providers supported by Spring AI.
 
 The application has a timeout configuration for the document generation API endpoint:
 
-**API Endpoint Timeout**: Configured in `application.yml` with a default of 2 minute:
+**API Endpoint Timeout**: Configured in `application.yml` with a default of 2 minutes:
 
 ```yaml
 api:
